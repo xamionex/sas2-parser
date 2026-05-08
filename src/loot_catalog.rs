@@ -1,7 +1,7 @@
-use crate::utils::{read_string, SaveError};
-use byteorder::{LittleEndian, ReadBytesExt};
+use crate::utils::{read_string, write_string, SaveError};
+use byteorder::{LittleEndian, ReadBytesExt, WriteBytesExt};
 use std::collections::HashMap;
-use std::io::{Cursor, Read, Seek};
+use std::io::{Cursor, Read, Seek, Write};
 
 #[derive(Debug, Clone)]
 pub struct LootField {
@@ -36,6 +36,7 @@ pub struct LootDef {
     pub token_cost: i32,
 }
 
+#[derive(Debug, Clone)]
 pub struct LootCatalog {
     pub loot_defs: Vec<LootDef>,
     pub by_name: HashMap<String, usize>,
@@ -92,6 +93,16 @@ impl LootCatalog {
             black_starstone_index: black_pearl_index,
             gray_starstone_index: gray_pearl_index,
         })
+    }
+
+    pub fn to_bytes(&self) -> Result<Vec<u8>, SaveError> {
+        let mut buf = Vec::new();
+        let count = self.loot_defs.len() as i32;
+        buf.write_i32::<LittleEndian>(count)?;
+        for def in &self.loot_defs {
+            def.write(&mut buf)?;
+        }
+        Ok(buf)
     }
 }
 
@@ -228,6 +239,39 @@ impl LootDef {
             token_cost,
         })
     }
+
+    fn write<W: Write>(&self, writer: &mut W) -> Result<(), SaveError> {
+        write_string(writer, &self.name)?;
+        for s in &self.title {
+            write_string(writer, s)?;
+        }
+        for s in &self.description {
+            write_string(writer, s)?;
+        }
+        writer.write_i32::<LittleEndian>(self.type_)?;
+        writer.write_i32::<LittleEndian>(self.sub_type)?;
+        writer.write_f32::<LittleEndian>(self.cost)?;
+        writer.write_i32::<LittleEndian>(self.img)?;
+        writer.write_i32::<LittleEndian>(self.alt_img)?;
+        write_string(writer, &self.texture)?;
+
+        // fields
+        writer.write_i32::<LittleEndian>(self.fields.len() as i32)?;
+        for field in &self.fields {
+            field.write(writer)?;
+        }
+
+        // flags
+        writer.write_i32::<LittleEndian>(self.flags.len() as i32)?;
+        for flag in &self.flags {
+            writer.write_i32::<LittleEndian>(*flag)?;
+        }
+
+        write_string(writer, &self.token_loot)?;
+        writer.write_i32::<LittleEndian>(self.token_cost)?;
+
+        Ok(())
+    }
 }
 
 impl LootField {
@@ -255,5 +299,17 @@ impl LootField {
             data_type,
             value,
         })
+    }
+
+    fn write<W: Write>(&self, writer: &mut W) -> Result<(), SaveError> {
+        writer.write_i32::<LittleEndian>(self.id)?;
+        writer.write_i32::<LittleEndian>(self.data_type)?;
+        match &self.value {
+            LootFieldValue::Float(v) => writer.write_f32::<LittleEndian>(*v)?,
+            LootFieldValue::Int(v) => writer.write_i32::<LittleEndian>(*v)?,
+            LootFieldValue::Bool(v) => writer.write_u8(if *v { 1 } else { 0 })?,
+            LootFieldValue::String(v) => write_string(writer, v)?,
+        }
+        Ok(())
     }
 }
