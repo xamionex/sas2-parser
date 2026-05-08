@@ -272,6 +272,12 @@ impl LootDef {
 
         Ok(())
     }
+
+    pub fn to_bytes(&self) -> Result<Vec<u8>, SaveError> {
+        let mut buf = Vec::new();
+        self.write(&mut buf)?;
+        Ok(buf)
+    }
 }
 
 impl LootField {
