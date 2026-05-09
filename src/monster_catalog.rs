@@ -1,10 +1,10 @@
-use crate::utils::{read_string, SaveError};
-use byteorder::{LittleEndian, ReadBytesExt};
+use crate::utils::{read_string, write_string, SaveError};
+use byteorder::{LittleEndian, ReadBytesExt, WriteBytesExt};
 use std::collections::HashMap;
 use std::fs;
 #[cfg(debug_assertions)]
 use std::io::Seek;
-use std::io::{Cursor, Read};
+use std::io::{Cursor, Read, Write};
 use std::path::Path;
 
 #[derive(Debug, Clone)]
@@ -43,6 +43,17 @@ impl MonsterField {
             data_type,
             value,
         })
+    }
+
+    fn write<W: Write>(&self, writer: &mut W) -> Result<(), SaveError> {
+        writer.write_i32::<LittleEndian>(self.id)?;
+        writer.write_i32::<LittleEndian>(self.data_type)?;
+        match &self.value {
+            MonsterFieldValue::Float(v) => writer.write_f32::<LittleEndian>(*v)?,
+            MonsterFieldValue::Int(v) => writer.write_i32::<LittleEndian>(*v)?,
+            MonsterFieldValue::String(v) => write_string(writer, v)?,
+        }
+        Ok(())
     }
 }
 
@@ -124,8 +135,49 @@ impl MonsterDef {
             flags,
         })
     }
+
+    fn write<W: Write>(&self, writer: &mut W) -> Result<(), SaveError> {
+        write_string(writer, &self.name)?;
+        for s in &self.titles {
+            write_string(writer, s)?;
+        }
+        for s in &self.descriptions {
+            write_string(writer, s)?;
+        }
+        writer.write_i32::<LittleEndian>(self.type_)?;
+        writer.write_i32::<LittleEndian>(self.sub_type)?;
+        writer.write_f32::<LittleEndian>(self.cost)?;
+        writer.write_i32::<LittleEndian>(self.img)?;
+        writer.write_i32::<LittleEndian>(self.alt_img)?;
+        write_string(writer, &self.texture)?;
+        write_string(writer, &self.def)?;
+        writer.write_i32::<LittleEndian>(self.box_width)?;
+        writer.write_i32::<LittleEndian>(self.box_height)?;
+        writer.write_i32::<LittleEndian>(self.box_sub_height)?;
+        writer.write_i32::<LittleEndian>(self.shadow_width)?;
+        writer.write_i32::<LittleEndian>(self.shadow_height)?;
+
+        writer.write_i32::<LittleEndian>(self.fields.len() as i32)?;
+        for field in &self.fields {
+            field.write(writer)?;
+        }
+
+        writer.write_i32::<LittleEndian>(self.flags.len() as i32)?;
+        for flag in &self.flags {
+            writer.write_i32::<LittleEndian>(*flag)?;
+        }
+
+        Ok(())
+    }
+
+    pub fn to_bytes(&self) -> Result<Vec<u8>, SaveError> {
+        let mut buf = Vec::new();
+        self.write(&mut buf)?;
+        Ok(buf)
+    }
 }
 
+#[derive(Debug, Clone)]
 pub struct MonsterCatalog {
     pub monsters: Vec<MonsterDef>,
     pub by_name: HashMap<String, i32>,
@@ -176,6 +228,16 @@ impl MonsterCatalog {
         }
 
         Ok(MonsterCatalog { monsters, by_name })
+    }
+
+    pub fn to_bytes(&self) -> Result<Vec<u8>, SaveError> {
+        let mut buf = Vec::new();
+        let count = self.monsters.len() as i32;
+        buf.write_i32::<LittleEndian>(count)?;
+        for def in &self.monsters {
+            def.write(&mut buf)?;
+        }
+        Ok(buf)
     }
 
     pub fn load_from_file(path: &Path) -> Result<Self, SaveError> {
