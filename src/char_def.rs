@@ -1,6 +1,6 @@
 use crate::utils::{read_string, SaveError};
 use byteorder::{LittleEndian, ReadBytesExt};
-use std::io::{Cursor, Read};
+use std::io::{Cursor};
 
 /// A single sprite part, as stored in the '.zsx' file (Part.Read in C#).
 #[derive(Debug, Clone)]
@@ -49,6 +49,7 @@ pub struct Animation {
 #[derive(Debug, Clone)]
 pub struct CharDef {
     pub name: String,
+    pub tex_name: String,
     pub animations: Vec<Animation>,
     /// Frames are stored in the order they appear in the file.
     /// A keyframe's 'frame_ref' directly indexes into this vector.
@@ -99,7 +100,7 @@ impl CharDef {
 
         // header
         let _path     = read_string(&mut r)?;
-        let _tex_name = read_string(&mut r)?;
+        let tex_name = read_string(&mut r)?;
         let _spec_tex = r.read_i32::<LittleEndian>()?;
 
         // animations
@@ -200,7 +201,7 @@ impl CharDef {
             frames.push(Frame { parts });
         }
 
-        Ok(CharDef { name, animations, frames })
+        Ok(CharDef { name, tex_name, animations, frames })
     }
 
     /// Open and parse a '.zsx' file directly from disk.

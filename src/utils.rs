@@ -1,4 +1,5 @@
-use std::io::{self, Read, Write};
+use std::io::{self, Cursor, Read, Write};
+use byteorder::ReadBytesExt;
 use thiserror::Error;
 
 #[derive(Debug, Error)]
@@ -51,6 +52,41 @@ pub fn read_string<R: Read>(reader: &mut R) -> io::Result<String> {
     let mut buf = vec![0u8; len];
     reader.read_exact(&mut buf)?;
     String::from_utf8(buf).map_err(|e| io::Error::new(io::ErrorKind::InvalidData, e))
+}
+
+/// Reads a C# BinaryWriter string with a **lossy** UTF‑8 conversion.
+/// Use this when the source data may contain non‑UTF‑8 bytes (e.g. master.zcm).
+pub(crate) fn read_string_lossy(r: &mut Cursor<&[u8]>) -> Result<String, SaveError> {
+    let len = read_7bit_encoded_int_lossy(r)? as usize;
+    if len > 65_536 {
+        return Err(SaveError::InvalidData(format!(
+            "String length {} too large",
+            len
+        )));
+    }
+    let mut buf = vec![0u8; len];
+    r.read_exact(&mut buf)
+        .map_err(|e| SaveError::Io(e.into()))?;
+    Ok(String::from_utf8_lossy(&buf).into_owned())
+}
+
+/// Reads a 7‑bit encoded integer (same as `utils::read_7bit_encoded_int`).
+fn read_7bit_encoded_int_lossy(r: &mut Cursor<&[u8]>) -> Result<u32, SaveError> {
+    let mut value = 0u32;
+    let mut shift = 0;
+    loop {
+        let b = r.read_u8()?;
+        value |= ((b & 0x7F) as u32) << shift;
+        if b & 0x80 == 0 {
+            return Ok(value);
+        }
+        shift += 7;
+        if shift > 28 {
+            return Err(SaveError::InvalidData(
+                "7‑bit length overflow".into(),
+            ));
+        }
+    }
 }
 
 /// Write a UTF‑8 string with length prefix (as expected by BinaryReader).

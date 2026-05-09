@@ -40,5 +40,7 @@ pub mod xnb_loader;
 
 pub mod types;
 pub mod char_def;
+pub mod subflags;
+pub mod xtexture;
 
 pub use types::{Bestiary, BestiaryBeast, Equipment, Item, PlayerFlags, SaveData, Stats};
