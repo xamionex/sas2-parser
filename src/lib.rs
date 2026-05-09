@@ -39,4 +39,6 @@ mod utils;
 pub mod xnb_loader;
 
 pub mod types;
+pub mod char_def;
+
 pub use types::{Bestiary, BestiaryBeast, Equipment, Item, PlayerFlags, SaveData, Stats};

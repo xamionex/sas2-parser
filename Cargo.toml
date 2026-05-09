@@ -1,6 +1,6 @@
 [package]
-name = "sas2-save"
-version = "1.3.2"
+name = "sas2-parser"
+version = "1.3.3"
 edition = "2024"
 
 [dependencies]
