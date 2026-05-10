@@ -42,5 +42,6 @@ pub mod types;
 pub mod char_def;
 pub mod subflags;
 pub mod xtexture;
+pub mod monster_names;
 
 pub use types::{Bestiary, BestiaryBeast, Equipment, Item, PlayerFlags, SaveData, Stats};
