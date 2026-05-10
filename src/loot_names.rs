@@ -14,7 +14,6 @@ pub fn get_type_name(type_: i32) -> &'static str {
     }
 }
 
-//noinspection SpellCheckingInspection
 /// Get the subtype name for a given loot type and subtype index.
 pub fn get_subtype_name(type_: i32, sub_type: i32) -> &'static str {
     match type_ {
@@ -69,7 +68,7 @@ pub fn get_subtype_name(type_: i32, sub_type: i32) -> &'static str {
             2 => "Key",
             _ => "Unknown",
         },
-        4 => "Material", // no subtypes in the provided code
+        4 => "Material", // no subtypes
         5 => "Key",
         6 => match sub_type {
             0 => "Ring",
@@ -84,6 +83,49 @@ pub fn get_subtype_name(type_: i32, sub_type: i32) -> &'static str {
         7 => "Magic",
         8 => "Gesture",
         _ => "Unknown",
+    }
+}
+
+/// Get the total number of defined flags for a loot type.
+/// Based on GetFlagCount() from each LootCategory subclass in the decompilation.
+pub fn get_loot_flag_count(type_: i32) -> i32 {
+    match type_ {
+        0 => 29, // LootArmor: 0..=28 (Punch Power)
+        1 => 56, // LootWeapon: 0..=55 (Elem|Gold)
+        2 => 22, // LootRanged: 0..=21 (Full Proc)
+        3 => 90, // LootConsumable: 0..=89 (>Oath Candle)
+        4 => 12, // LootMaterial: 0..=11 (Elem|Dark)
+        5 => 2,  // LootKey: 0..=1 (Tome)
+        6 => 55, // LootCharm: 0..=54 (Haze Rage)
+        7 => 2,  // LootMagic: 0..=1 (MP Type)
+        8 => 4,  // LootGesture: 0..=3 (Neutral)
+        _ => 0,
+    }
+}
+
+/// Returns true if this field is a magic-slot reference (weapon fields 14/15/16).
+/// These are stored as item-name strings and should get a special picker in the UI.
+pub fn is_magic_slot_field(type_: i32, field_id: i32) -> bool {
+    type_ == 1 && (field_id == 14 || field_id == 15 || field_id == 16)
+}
+
+/// Returns the display name for a magic type index (LootMagic.GetMagicName).
+pub fn get_magic_type_name(idx: i32) -> &'static str {
+    match idx {
+        0 => "Amp",
+        1 => "Elem",
+        2 => "Cure",
+        3 => "Wave",
+        4 => "Orbits",
+        5 => "Turret",
+        6 => "Antidote",
+        7 => "Resistance",
+        8 => "Explosion",
+        9 => "Column",
+        10 => "Bless",
+        11 => "Orbs",
+        12 => "Seekers",
+        _ => "Unknown Magic",
     }
 }
 
@@ -225,7 +267,7 @@ pub fn get_field_name(type_: i32, field_id: i32) -> &'static str {
             2 => "Inventory Max",
             _ => "Unknown Field",
         },
-        5 => "Key", // no fields in provided code
+        5 => "Key", // no fields
         6 => match field_id {
             0 => "Crafting Loot 1",
             1 => "- Loot 1 Count",

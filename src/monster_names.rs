@@ -1,3 +1,19 @@
+/// Returns the total number of defined flags for a given monster type.
+/// Based on GetFlagCount() in each MonsterCategory subclass in the decompilation.
+pub fn get_monster_flag_count(type_: i32) -> i32 {
+    match type_ {
+        0 => 3,  // MonsterNPC: 0..=2 (No Turn)
+        1 => 78, // MonsterMonster: 0..=77 (Elem|Gold)
+        2 => 0,  // MonsterChest: no flags
+        3 => 8,  // MonsterSwitch: 0..=7 (Arena Check Return)
+        4 => 7,  // MonsterTrap: 0..=6 (Mask Lasers)
+        5 => 3,  // MonsterHarvest: 0..=2 (Side Clue)
+        6 => 11, // MonsterCritter: 0..=10 (Candelabra)
+        7 => 2,  // MonsterTravel: 0..=1 (End Point)
+        _ => 0,
+    }
+}
+
 /// Returns the human-readable name for a monster type.
 pub fn get_monster_type_name(type_: i32) -> &'static str {
     match type_ {
@@ -14,8 +30,7 @@ pub fn get_monster_type_name(type_: i32) -> &'static str {
 }
 
 /// Returns the human-readable field name for a given monster type and field ID.
-/// Based on the overrides in MonsterNPC, MonsterMonster, MonsterCritter,
-/// MonsterHarvest, MonsterSwitch, MonsterTrap, and MonsterCategory.
+/// Based on the overrides in MonsterNPC, MonsterMonster, MonsterCritter, MonsterHarvest, MonsterSwitch, MonsterTrap, and MonsterCategory.
 pub fn get_monster_field_name(monster_type: i32, field_id: i32) -> &'static str {
     match monster_type {
         0 => match field_id {
